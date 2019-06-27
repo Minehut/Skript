@@ -42,6 +42,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.command.CommandSender;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Cat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
@@ -494,6 +495,7 @@ public class BukkitClasses {
 					@Override
 					protected World deserialize(final Fields fields) throws StreamCorruptedException {
 						final String name = fields.getObject("name", String.class);
+						assert name != null;
 						final World w = Bukkit.getWorld(name);
 						if (w == null)
 							throw new StreamCorruptedException("Missing world " + name);
@@ -915,8 +917,8 @@ public class BukkitClasses {
 		Classes.registerClass(new ClassInfo<>(GameMode.class, "gamemode")
 				.user("game ?modes?")
 				.name("Game Mode")
-				.description("The game modes survival, creative and adventure.")
-				.usage("creative/survival/adventure")
+				.description("The game modes survival, creative, adventure and spectator.")
+				.usage("creative/survival/adventure/spectator")
 				.examples("player's gamemode is survival",
 						"set the player argument's game mode to creative")
 				.since("1.0")
@@ -1105,6 +1107,7 @@ public class BukkitClasses {
 					@Override
 					protected PotionEffectType deserialize(final Fields fields) throws StreamCorruptedException {
 						final String name = fields.getObject("name", String.class);
+						assert name != null;
 						final PotionEffectType t = PotionEffectType.getByName(name);
 						if (t == null)
 							throw new StreamCorruptedException("Invalid PotionEffectType " + name);
@@ -1252,7 +1255,7 @@ public class BukkitClasses {
 		Classes.registerClass(new ClassInfo<>(Enchantment.class, "enchantment")
 				.user("enchantments?")
 				.name("Enchantment")
-				.description("An enchantment, e.g. 'sharpness' or 'furtune'. Unlike <a href='#enchantmenttype'>enchantment type</a> " +
+				.description("An enchantment, e.g. 'sharpness' or 'fortune'. Unlike <a href='#enchantmenttype'>enchantment type</a> " +
 						"this type has no level, but you usually don't need to use this type anyway.")
 				.usage(StringUtils.join(EnchantmentType.getNames(), ", "))
 				.examples("")
@@ -1633,7 +1636,7 @@ public class BukkitClasses {
 					.user("(panda )?genes?")
 					.name("Gene")
 					.description("Represents a Panda's main or hidden gene. " +
-							"Look at Panda's minecraft wiki on <a href='https://minecraft.gamepedia.com/Panda#Genetics'>genetics</a> for more info.")
+							"See <a href='https://minecraft.gamepedia.com/Panda#Genetics'>genetics</a> for more info.")
 					.examples(genes.getAllNames())
 					.since("2.4")
 					.requiredPlugins("Minecraft 1.14 or newer")
@@ -1660,6 +1663,39 @@ public class BukkitClasses {
 						}
 					})
 					.serializer(new EnumSerializer<>(Gene.class)));
+		}
+		if (Skript.classExists("org.bukkit.entity.Cat$Type")) {
+			EnumUtils<Cat.Type> races = new EnumUtils<>(Cat.Type.class, "cat types");
+			Classes.registerClass(new ClassInfo<>(Cat.Type.class, "cattype")
+					.user("cat ?(type|race)s?")
+					.name("Cat Type")
+					.description("Represents the race/type of a cat entity.")
+					.examples(races.getAllNames())
+					.since("2.4")
+					.requiredPlugins("Minecraft 1.14 or newer")
+					.parser(new Parser<Cat.Type>() {
+						@Nullable
+						@Override
+						public Cat.Type parse(String expr, ParseContext context) {
+							return races.parse(expr);
+						}
+						
+						@Override
+						public String toString(Cat.Type race, int flags) {
+							return races.toString(race, flags);
+						}
+						
+						@Override
+						public String toVariableNameString(Cat.Type race) {
+							return race.name();
+						}
+						
+						@Override
+						public String getVariableNamePattern() {
+							return "\\S+";
+						}
+					})
+					.serializer(new EnumSerializer<>(Cat.Type.class)));
 		}
 	}
 

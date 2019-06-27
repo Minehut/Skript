@@ -19,76 +19,74 @@
  */
 package ch.njol.skript.entity;
 
-import org.bukkit.entity.Fox;
-import org.bukkit.entity.Fox.Type;
+import org.bukkit.entity.Cat;
 import org.eclipse.jdt.annotation.Nullable;
 
 import ch.njol.skript.Skript;
 import ch.njol.skript.lang.Literal;
 import ch.njol.skript.lang.SkriptParser.ParseResult;
+import ch.njol.util.coll.CollectionUtils;
 
-public class FoxData extends EntityData<Fox> {
+public class CatData extends EntityData<Cat> {
 	
 	static {
-		if (Skript.classExists("org.bukkit.entity.Fox"))
-			EntityData.register(FoxData.class, "fox", Fox.class, 1,
-					"fox", "red fox", "snow fox");
+		if (Skript.classExists("org.bukkit.entity.Cat"))
+			EntityData.register(CatData.class, "cat", Cat.class, "cat");
 	}
 	
 	@Nullable
-	private Type type = null;
+	private Cat.Type race = null;
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	protected boolean init(Literal<?>[] exprs, int matchedPattern, ParseResult parseResult) {
-		if (matchedPattern > 0)
-			type = Type.values()[matchedPattern - 1];
+		if (exprs.length > 0 && exprs[0] != null)
+			race = ((Literal<Cat.Type>) exprs[0]).getSingle();
 		return true;
 	}
 	
 	@Override
-	protected boolean init(@Nullable Class<? extends Fox> c, @Nullable Fox fox) {
-		if (fox != null)
-			type = fox.getFoxType();
-		return true;
+	protected boolean init(@Nullable Class<? extends Cat> c, @Nullable Cat cat) {
+		if (cat != null)
+			race = cat.getCatType();
+		race = Cat.Type.TABBY;
+		return false;
 	}
 	
 	@Override
-	public void set(Fox entity) {
-		if (type != null)
-			entity.setFoxType(type);
+	public void set(Cat entity) {
+		Cat.Type type = race != null ? race : CollectionUtils.getRandom(Cat.Type.values());
+		assert type != null;
+		entity.setCatType(type);
 	}
 	
 	@Override
-	protected boolean match(Fox entity) {
-		return type == entity.getFoxType();
+	protected boolean match(Cat entity) {
+		return race == null || entity.getCatType() == race;
 	}
 	
 	@Override
-	public Class<? extends Fox> getType() {
-		return Fox.class;
+	public Class<? extends Cat> getType() {
+		return Cat.class;
 	}
 	
 	@Override
 	public EntityData getSuperType() {
-		return new FoxData();
+		return new CatData();
 	}
 	
 	@Override
 	protected int hashCode_i() {
-		return type != null ? type.hashCode() : 0;
+		return race != null ? race.hashCode() : 0;
 	}
 	
 	@Override
 	protected boolean equals_i(EntityData<?> data) {
-		if (!(data instanceof FoxData))
-			return false;
-		return type == ((FoxData) data).type;
+		return data instanceof CatData ? race == ((CatData) data).race : false;
 	}
 	
 	@Override
 	public boolean isSupertypeOf(EntityData<?> data) {
-		if (!(data instanceof FoxData))
-			return false;
-		return type == null || type == ((FoxData) data).type;
+		return data instanceof CatData ? race == null || race == ((CatData) data).race : false;
 	}
 }

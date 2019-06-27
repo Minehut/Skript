@@ -19,46 +19,32 @@
  */
 package ch.njol.skript.conditions;
 
-import org.bukkit.entity.Entity;
+import org.bukkit.inventory.ItemStack;
 
 import ch.njol.skript.conditions.base.PropertyCondition;
 import ch.njol.skript.doc.Description;
 import ch.njol.skript.doc.Examples;
 import ch.njol.skript.doc.Name;
 import ch.njol.skript.doc.Since;
-import ch.njol.skript.lang.Expression;
-import ch.njol.skript.lang.SkriptParser.ParseResult;
-import ch.njol.util.Kleenean;
 
-@Name("Is Alive")
-@Description("Checks whether an entity is alive. Works for non-living entities too.")
-@Examples({"if {villager-buddy::%player's uuid%} is not dead:",
-	"",
-	"on shoot:",
-	"\twhile the projectile is alive:"})
-@Since("2.0, 2.4-alpha4 (non-living entity support)")
-public class CondIsAlive extends PropertyCondition<Entity> {
-
+@Name("Is Block")
+@Description("Checks whether an item is a block.")
+@Examples({"player's held item is a block", "{list::*} are blocks"})
+@Since("2.4")
+public class CondIsBlock extends PropertyCondition<ItemStack> {
+	
 	static {
-		register(CondIsAlive.class, "(alive|1¦dead)", "entities");
+		register(CondIsBlock.class, "([a] block|blocks)", "itemstacks");
 	}
-
-	private boolean isNegated;
-
+	
 	@Override
-	public boolean init(Expression<?>[] exprs, int matchedPattern, Kleenean isDelayed, ParseResult parseResult) {
-		isNegated = parseResult.mark == 1;
-		return super.init(exprs, matchedPattern, isDelayed, parseResult);
+	public boolean check(ItemStack i) {
+		return i.getType().isBlock();
 	}
-
-	@Override
-	public boolean check(Entity e) {
-		return isNegated == e.isDead();
-	}
-
+	
 	@Override
 	protected String getPropertyName() {
-		return isNegated ? "dead" : "alive";
+		return "block";
 	}
-
+	
 }

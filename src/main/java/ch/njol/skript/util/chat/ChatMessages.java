@@ -242,6 +242,7 @@ public class ChatMessages {
 					} else {
 						name = tag;
 					}
+					name = name.toLowerCase(); // Tags are case-insensitive
 					
 					code = codes.get(name);
 					if (code != null) { // ... and if the tag IS really valid
@@ -454,7 +455,6 @@ public class ChatMessages {
 			to.hoverEvent = from.hoverEvent;
 	}
 
-
 	public static void shareStyles(MessageComponent[] components) {
 		MessageComponent previous = null;
 		for (MessageComponent c : components) {
@@ -487,5 +487,21 @@ public class ChatMessages {
 		
 		addonCodes.add(code); // So that language reloads don't break everything
 		registerChatCode(code);
+	}
+	
+	/**
+	 * Strips all style markup from given string.
+	 * @param text String to strip markup from.
+	 * @return A string without markup.
+	 */
+	public static String stripStyles(String text) {
+		List<MessageComponent> components = parse(text);
+		StringBuilder sb = new StringBuilder();
+		for (MessageComponent component : components) {
+			sb.append(component.text);
+		}
+		String plain = sb.toString();
+		assert plain != null;
+		return plain;
 	}
 }
