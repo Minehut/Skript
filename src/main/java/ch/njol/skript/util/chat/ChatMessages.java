@@ -55,7 +55,6 @@ import ch.njol.skript.localization.LanguageChangeListener;
 import ch.njol.skript.localization.Message;
 import ch.njol.skript.registrations.Classes;
 import ch.njol.skript.registrations.Converters;
-import ch.njol.skript.util.SkriptColor;
 import ch.njol.yggdrasil.Fields;
 
 /**
@@ -139,7 +138,8 @@ public class ChatMessages {
 		
 		if (code.isLocalized()) {
 			if (code.getColorCode() != null) { // Color code!
-				for (String name : Language.getList(SkriptColor.LANGUAGE_NODE + "." + langName + ".names")) {
+				// Avoid dependency on SkriptColor
+				for (String name : Language.getList("colors." + langName + ".names")) {
 					codes.put(name, code);
 				}
 			} else { // Not color code
@@ -490,9 +490,9 @@ public class ChatMessages {
 	}
 	
 	/**
-	 * Strips all style markup from given string.
-	 * @param text String to strip markup from.
-	 * @return A string without markup.
+	 * Strips all styles from given string.
+	 * @param text String to strip styles from.
+	 * @return A string without styles.
 	 */
 	public static String stripStyles(String text) {
 		List<MessageComponent> components = parse(text);
@@ -501,6 +501,9 @@ public class ChatMessages {
 			sb.append(component.text);
 		}
 		String plain = sb.toString();
+		
+		// To be extra safe, strip <, >, § and &; protects against bugs in parser
+		plain = plain.replace("<", "").replace(">", "").replace("§", "").replace("&", "");
 		assert plain != null;
 		return plain;
 	}
