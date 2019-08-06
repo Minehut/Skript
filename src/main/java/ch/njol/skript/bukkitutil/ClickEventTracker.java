@@ -27,6 +27,7 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -77,13 +78,16 @@ public class ClickEventTracker {
 		UUID uuid = player.getUniqueId();
 		TrackedEvent first = firstEvents.get(uuid);
 		if (first != null && first.event != event) { // We've checked an event before, and it is not this one
-			if ((hand == EquipmentSlot.HAND && first.hand == EquipmentSlot.OFF_HAND)
-					|| (hand == EquipmentSlot.OFF_HAND && first.hand == EquipmentSlot.HAND)) {
-				// Previous event had different hand, so we've captured one complete click interaction
-				firstEvents.remove(uuid); // Let next interaction event pass
-			}
 			// Ignore this, but set its cancelled status based on one set to first event
-			event.setCancelled(first.event.isCancelled());
+			if (event instanceof PlayerInteractEvent) { // Handle use item/block separately
+				// Failing to do so caused issue SkriptLang/Skript#2303
+				PlayerInteractEvent firstClick = (PlayerInteractEvent) first.event;
+				PlayerInteractEvent click = (PlayerInteractEvent) event;
+				click.setUseInteractedBlock(firstClick.useInteractedBlock());
+				click.setUseItemInHand(firstClick.useItemInHand());
+			} else {
+				event.setCancelled(first.event.isCancelled());
+			}
 			return false;
 		} else { // Remember and run this
 			firstEvents.put(uuid, new TrackedEvent(event, hand));
