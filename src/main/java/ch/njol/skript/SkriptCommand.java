@@ -402,6 +402,9 @@ public class SkriptCommand implements CommandExecutor {
 	
 	@Nullable
 	public static File getScriptFromName(String script){
+		if (script.indexOf("..") >= 0) {
+			return null;
+		}
 		final boolean isFolder = script.endsWith("/") || script.endsWith("\\");
 		if (isFolder) {
 			script = script.replace('/', File.separatorChar).replace('\\', File.separatorChar);
