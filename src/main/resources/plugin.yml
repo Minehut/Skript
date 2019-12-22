@@ -46,7 +46,7 @@ website: https://skriptlang.github.io/Skript
 
 main: ch.njol.skript.Skript
 
-version: @version@
+version: @version@-MH
 api-version: 1.13
 
 commands:
