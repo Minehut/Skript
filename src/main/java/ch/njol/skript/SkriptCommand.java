@@ -1,18 +1,18 @@
 /**
- *   This file is part of Skript.
+ * This file is part of Skript.
  *
- *  Skript is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ * Skript is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *  Skript is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
+ * Skript is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with Skript.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License
+ * along with Skript.  If not, see <http://www.gnu.org/licenses/>.
  *
  *
  * Copyright 2011-2017 Peter Güttinger and contributors
@@ -30,7 +30,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.plugin.PluginDescriptionFile;
 import org.eclipse.jdt.annotation.Nullable;
 
 import ch.njol.skript.ScriptLoader.ScriptInfo;
@@ -46,6 +45,9 @@ import ch.njol.skript.log.SkriptLogger;
 import ch.njol.skript.tests.runner.SkriptTestEvent;
 import ch.njol.skript.tests.runner.TestMode;
 import ch.njol.skript.tests.runner.TestTracker;
+import ch.njol.skript.update.ReleaseStatus;
+import ch.njol.skript.update.UpdaterState;
+import ch.njol.skript.util.Color;
 import ch.njol.skript.util.ExceptionUtils;
 import ch.njol.skript.util.FileUtils;
 import ch.njol.skript.util.SkriptColor;
@@ -67,10 +69,10 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Skript.  If not, see <http://www.gnu.org/licenses/>.
- * 
- * 
+ *
+ *
  * Copyright 2011-2014 Peter Güttinger
- * 
+ *
  */
 
 /**
@@ -82,28 +84,27 @@ public class SkriptCommand implements CommandExecutor {
 	// TODO /skript scripts show/list - lists all enabled and/or disabled scripts in the scripts folder and/or subfolders (maybe add a pattern [using * and **])
 	// TODO document this command on the website
 	private final static CommandHelp skriptCommandHelp = new CommandHelp("<gray>/<gold>skript", SkriptColor.LIGHT_CYAN, NODE + ".help")
-			.add(new CommandHelp("reload", SkriptColor.DARK_RED)
-					.add("all")
-					.add("config")
-					.add("aliases")
-					.add("scripts")
-					.add("<script>")
-			).add(new CommandHelp("enable", SkriptColor.DARK_RED)
-					.add("all")
-					.add("<script>")
-			).add(new CommandHelp("disable", SkriptColor.DARK_RED)
-					.add("all")
-					.add("<script>")
-			).add(new CommandHelp("update", SkriptColor.DARK_RED)
-					.add("check")
-					.add("changes")
-					.add("download")
-			).add("info"
+		.add(new CommandHelp("reload", SkriptColor.DARK_RED)
+			.add("all")
+			.add("config")
+			.add("aliases")
+			.add("scripts")
+			.add("<script>")
+		).add(new CommandHelp("enable", SkriptColor.DARK_RED)
+			.add("all")
+			.add("<script>")
+		).add(new CommandHelp("disable", SkriptColor.DARK_RED)
+			.add("all")
+			.add("<script>")
+		).add(new CommandHelp("update", SkriptColor.DARK_RED)
+				.add("check")
+				.add("changes")
+				.add("download")
 			//			).add(new CommandHelp("variable", "Commands for modifying variables", ChatColor.DARK_RED)
 //					.add("set", "Creates a new variable or changes an existing one")
 //					.add("delete", "Deletes a variable")
 //					.add("find", "Find variables")
-			).add("help");
+		).add("help");
 	
 	static {
 		if (new File(Skript.getInstance().getDataFolder() + "/doc-templates").exists()) {
@@ -123,6 +124,8 @@ public class SkriptCommand implements CommandExecutor {
 	
 	private final static ArgsMessage m_reloaded = new ArgsMessage(NODE + ".reload.reloaded");
 	private final static ArgsMessage m_reload_error = new ArgsMessage(NODE + ".reload.error");
+	
+	private final static ArgsMessage m_changes_title = new ArgsMessage(NODE + ".update.changes.title");
 	
 	private static void reloaded(final CommandSender sender, final RedirectingLogHandler r, String what, final Object... args) {
 		what = args.length == 0 ? Language.get(NODE + ".reload." + what) : PluralizingArgsMessage.format(Language.format(NODE + ".reload." + what, args));
@@ -183,11 +186,17 @@ public class SkriptCommand implements CommandExecutor {
 							return true;
 						}
 						reloading(sender, "script", f.getName());
-						ScriptLoader.reloadScript(f);
+						if (!ScriptLoader.loadAsync)
+							ScriptLoader.unloadScript(f);
+						Config config = ScriptLoader.loadStructure(f);
+						ScriptLoader.loadScripts(config);
 						reloaded(sender, r, "script", f.getName());
 					} else {
 						reloading(sender, "scripts in folder", f.getName());
-						final int enabled = ScriptLoader.reloadScripts(f).files;
+						if (!ScriptLoader.loadAsync)
+							ScriptLoader.unloadScripts(f);
+						List<Config> configs = ScriptLoader.loadStructures(f);
+						final int enabled = ScriptLoader.loadScripts(configs).files;
 						if (enabled == 0)
 							info(sender, "reload.empty folder", f.getName());
 						else
@@ -325,17 +334,6 @@ public class SkriptCommand implements CommandExecutor {
 				} else if (args[1].equalsIgnoreCase("download")) {
 					updater.updateCheck(sender);
 				}
-			} else if (args[0].equalsIgnoreCase("info")) {
-				info(sender, "info.aliases");
-				info(sender, "info.documentation");
-				info(sender, "info.server", Bukkit.getVersion());
-				info(sender, "info.version", Skript.getVersion());
-				info(sender, "info.addons");
-				for (SkriptAddon addon : Skript.getAddons()) {
-					PluginDescriptionFile desc = addon.plugin.getDescription();
-					String web = desc.getWebsite();
-					Skript.info(sender, " - " + desc.getFullName() + (web != null ? " (" + web + ")" : ""));
-				}
 			} else if (args[0].equalsIgnoreCase("help")) {
 				skriptCommandHelp.showHelp(sender);
 			} else if (args[0].equalsIgnoreCase("gen-docs")) {
@@ -360,7 +358,7 @@ public class SkriptCommand implements CommandExecutor {
 					}
 				} else {
 					script = TestMode.TEST_DIR.resolve(
-							Arrays.stream(args).skip(1).collect(Collectors.joining(" ")) + ".sk").toFile();
+						Arrays.stream(args).skip(1).collect(Collectors.joining(" ")) + ".sk").toFile();
 					TestMode.lastTestFile = script;
 				}
 				assert script != null;
@@ -395,7 +393,7 @@ public class SkriptCommand implements CommandExecutor {
 	private static File getScriptFromArgs(final CommandSender sender, final String[] args, final int start) {
 		String script = StringUtils.join(args, " ", start, args.length);
 		File f = getScriptFromName(script);
-		if (f == null){
+		if (f == null) {
 			Skript.error(sender, (script.endsWith("/") || script.endsWith("\\") ? m_invalid_folder : m_invalid_script).toString(script));
 			return null;
 		}
@@ -403,13 +401,16 @@ public class SkriptCommand implements CommandExecutor {
 	}
 	
 	@Nullable
-	public static File getScriptFromName(String script){
+	public static File getScriptFromName(String script) {
+		if (script.indexOf("..") >= 0) {
+			return null;
+		}
 		final boolean isFolder = script.endsWith("/") || script.endsWith("\\");
 		if (isFolder) {
 			script = script.replace('/', File.separatorChar).replace('\\', File.separatorChar);
 		} else if (!StringUtils.endsWithIgnoreCase(script, ".sk")) {
 			int dot = script.lastIndexOf('.');
-			if (dot > 0 && !script.substring(dot+1).equals("")) {
+			if (dot > 0 && !script.substring(dot + 1).equals("")) {
 				return null;
 			}
 			script = script + ".sk";
