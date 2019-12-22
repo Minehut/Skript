@@ -109,58 +109,11 @@ public abstract class Updater {
 	 * @return A future which is completed when check has been done.
 	 */
 	public CompletableFuture<Void> checkUpdates() {
-		if (!enabled) {
-			// Release status still unknown
-			CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
-			assert future != null;
-			return future;
-		}
-		
 		// Custom releases have updating disabled
-		if (currentRelease.flavor.contains("selfbuilt")) {
-			releaseStatus = ReleaseStatus.CUSTOM;
-			CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
-			assert future != null;
-			return future;
-		}
-		
-		state = UpdaterState.CHECKING; // We started checking for updates
-		CompletableFuture<Void> completed = fetchUpdateManifest().thenAccept((manifest) -> {
-			synchronized (this) { // Avoid corrupting updater state
-				if (manifest != null) {
-					releaseStatus = ReleaseStatus.OUTDATED; // Update available
-					updateManifest = manifest;
-				} else {
-					releaseStatus = ReleaseStatus.LATEST;
-				}
-				
-				state = UpdaterState.INACTIVE; // In any case, we finished now
-				
-				// Call this again later
-				long ticks = checkFrequency;
-				if (ticks > 0) {
-					new Task(Skript.getInstance(), ticks, true) {
-						
-						@Override
-						public void run() {
-							checkUpdates();
-						}
-					};
-				}
-			}
-		}).whenComplete((none, e) -> {
-			if (e != null) {
-				synchronized (this) {
-					state = UpdaterState.ERROR;
-					// Avoid Skript.exception, because this is probably not Skript developers' fault
-					// It is much more likely that server has connection issues
-					Skript.error("Checking for updates failed. Do you have Internet connection?");
-					e.printStackTrace();
-				}
-			}
-		});
-		assert completed != null;
-		return completed;
+		releaseStatus = ReleaseStatus.CUSTOM;
+		CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
+		assert future != null;
+		return future;
 	}
 	
 	public ReleaseManifest getCurrentRelease() {
