@@ -53,8 +53,8 @@ public class ExprOnlinePlayersCount extends SimpleExpression<Number> {
 
 	static {
 		Skript.registerExpression(ExprOnlinePlayersCount.class, Number.class, ExpressionType.PROPERTY,
-				"[the] [(1¦(real|default)|2¦(fake|shown|displayed))] [online] player (count|amount|number)",
-				"[the] [(1¦(real|default)|2¦(fake|shown|displayed))] (count|amount|number|size) of online players");
+				"[the] [(real|default)] [online] player (count|amount|number)",
+				"[the] [(real|default)] (count|amount|number|size) of online players");
 	}
 
 	private static final boolean PAPER_EVENT_EXISTS = Skript.classExists("com.destroystokyo.paper.event.server.PaperServerListPingEvent");
@@ -73,7 +73,7 @@ public class ExprOnlinePlayersCount extends SimpleExpression<Number> {
 				return false;
 			}
 		}
-		isReal = (parseResult.mark == 0 && !isPaperEvent) || parseResult.mark == 1;
+		isReal = true;
 		return true;
 	}
 
