@@ -66,8 +66,8 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  *
  *  You should have received a copy of the GNU General Public License
  *  along with Skript.  If not, see <http://www.gnu.org/licenses/>.
- * 
- * 
+ *
+ *
  * Copyright 2011-2014 Peter Güttinger
  *
  */
@@ -97,6 +97,7 @@ public class SkriptCommand implements CommandExecutor {
 					.add("check")
 					.add("changes")
 					.add("download")
+			).add("info"
 			//			).add(new CommandHelp("variable", "Commands for modifying variables", ChatColor.DARK_RED)
 //					.add("set", "Creates a new variable or changes an existing one")
 //					.add("delete", "Deletes a variable")
@@ -330,6 +331,17 @@ public class SkriptCommand implements CommandExecutor {
 					updater.changesCheck(sender);
 				} else if (args[1].equalsIgnoreCase("download")) {
 					updater.updateCheck(sender);
+				}
+			} else if (args[0].equalsIgnoreCase("info")) {
+				info(sender, "info.aliases");
+				info(sender, "info.documentation");
+				info(sender, "info.server", Bukkit.getVersion());
+				info(sender, "info.version", Skript.getVersion());
+				info(sender, "info.addons");
+				for (SkriptAddon addon : Skript.getAddons()) {
+					PluginDescriptionFile desc = addon.plugin.getDescription();
+					String web = desc.getWebsite();
+					Skript.info(sender, " - " + desc.getFullName() + (web != null ? " (" + web + ")" : ""));
 				}
 			} else if (args[0].equalsIgnoreCase("help")) {
 				skriptCommandHelp.showHelp(sender);
